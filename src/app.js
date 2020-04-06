@@ -1,13 +1,12 @@
 const path = require('path')
 const express = require('express')
-const chalk = require('chalk')
 const hbs = require('hbs')
-const geocode = require('./utils/geocode')
+const { geocode, reverseGeocode } = require('./utils/geocode')
 const forecast = require('./utils/forecast')
 
 
 const app = express()
-const port= process.env.PORT || 3000
+const port = process.env.PORT || 3000
 
 //Define paths for Express config
 const publicDirectoryPath = path.join(__dirname, '../public')
@@ -44,7 +43,7 @@ app.get('/help', (req, res) => {
 })
 app.get('/weather', (req, res) => {
     if (req.query.address) {
-        geocode(req.query.address, (error, { latitude, longitude, location }={}) => {
+        geocode(req.query.address, (error, { latitude, longitude, location } = {}) => {
             if (error) {
                 return res.send({
                     error: error
@@ -59,7 +58,7 @@ app.get('/weather', (req, res) => {
                 return res.send({
                     forecast: foreCastData,
                     location,
-                    address:req.query.address
+                    address: req.query.address
                 })
             })
         })
@@ -68,6 +67,29 @@ app.get('/weather', (req, res) => {
         //     forecast: 'forecast',
         //     address : req.query.address
         //         })
+    }
+    else if (req.query.long && req.query.lat) {
+        latitude = req.query.lat
+        longitude = req.query.long
+        reverseGeocode(latitude,longitude, (error, { latitude, longitude, location } = {}) => {
+            if (error) {
+                return res.send({
+                    error: error
+                })
+            }
+            forecast(latitude, longitude, (error, foreCastData) => {
+                if (error) {
+                    return res.send({
+                        error: error
+                    })
+                }
+                return res.send({
+                    forecast: foreCastData,
+                    location,
+                    address: latitude+', ' +longitude
+                })
+            })
+        })
     }
     // res.send({error:'Error, enter address'})
 })
@@ -98,5 +120,5 @@ app.get('*', (req, res) => {
     })
 })
 app.listen(port, () => {
-    console.log('Server is up on port: ' +port)
+    console.log('Server is up on port: ' + port)
 })
